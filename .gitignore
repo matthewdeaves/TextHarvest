@@ -1,0 +1,11 @@
+# output folers
+text_output
+ocr_text_output
+ocr_pdf_output
+code_listings
+
+# sources
+source_code/*
+!/source_code/.gitkeep
+source_pdf/*
+!/source_pdf/.gitkeep
