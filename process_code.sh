@@ -6,13 +6,19 @@ CODE_DIR="source_code"
 # Define the suffix for output files
 OUTPUT_SUFFIX="_listing.txt"
 # Define the directory where output files will be saved
-OUTPUT_DIR="code_listings" # Changed from "."
+OUTPUT_DIR="code_listings"
 # Define the code file extensions to include (add or remove as needed)
 # Ensure each extension starts with a dot '.'
 CODE_EXTENSIONS=(
     ".c" ".h" ".cpp" ".hpp" ".java" ".py" ".js" ".ts" ".html" ".css"
     ".sh" ".rb" ".go" ".rs" ".php" ".swift" ".kt" ".kts" ".scala"
     # Add more extensions here
+)
+# Define specific filenames to always include
+SPECIFIC_FILENAMES=(
+    "CMakeLists.txt"
+    "Makefile"
+    # Add more specific filenames here if needed
 )
 
 # --- Script Logic ---
@@ -24,7 +30,6 @@ if [ ! -d "$CODE_DIR" ]; then
 fi
 
 # Create the output directory if it doesn't exist
-# The -p flag prevents errors if it already exists and creates parent dirs if needed
 mkdir -p "$OUTPUT_DIR"
 if [ ! -d "$OUTPUT_DIR" ]; then
   echo "Error: Could not create output directory '$OUTPUT_DIR'."
@@ -35,9 +40,10 @@ fi
 echo "Generating project source listings (recursively)..."
 echo "Input directory: '$CODE_DIR'"
 echo "Output directory: '$OUTPUT_DIR'"
+echo "Including extensions: ${CODE_EXTENSIONS[*]}"
+echo "Including specific files: ${SPECIFIC_FILENAMES[*]}"
 
 # Change into the code directory to make find paths relative
-# Use pushd/popd for safer directory navigation
 pushd "$CODE_DIR" > /dev/null || exit 1 # Enter code dir, exit if fails
 
 # Loop through each item in the code directory (potential project folders)
@@ -47,7 +53,6 @@ for project_dir in *; do
     echo "Processing project: $project_dir"
 
     # Define the output file name for this specific project
-    # Place it inside the OUTPUT_DIR relative to the original script location
     PROJECT_OUTPUT_FILE="../${OUTPUT_DIR}/${project_dir}${OUTPUT_SUFFIX}" # Updated path
 
     # Create or clear the output file for this project
@@ -59,36 +64,53 @@ for project_dir in *; do
     echo "=======================================" >> "$PROJECT_OUTPUT_FILE"
     echo "" >> "$PROJECT_OUTPUT_FILE"
 
-    # --- Build the find command arguments for extensions ---
+    # --- Build the find command arguments ---
     find_args=()
-    first_ext=true
+    first_condition=true
+
+    # Add conditions for extensions
     for ext in "${CODE_EXTENSIONS[@]}"; do
-      if [ "$first_ext" = true ]; then
+      if [ "$first_condition" = true ]; then
         find_args+=(-name "*$ext")
-        first_ext=false
+        first_condition=false
       else
-        # Add '-o' (OR) before subsequent -name arguments
         find_args+=(-o -name "*$ext")
       fi
     done
 
-    # Check if any extensions were defined
-    if [ ${#find_args[@]} -eq 0 ]; then
-        echo "Warning: No code extensions defined in CODE_EXTENSIONS array for project '$project_dir'. Skipping file search."
+    # Add conditions for specific filenames
+    for filename in "${SPECIFIC_FILENAMES[@]}"; do
+       if [ "$first_condition" = true ]; then
+        find_args+=(-name "$filename")
+        first_condition=false
+      else
+        find_args+=(-o -name "$filename")
+      fi
+    done
+
+    # Check if any conditions were added
+    if [ "$first_condition" = true ]; then
+        echo "Warning: No code extensions or specific filenames defined for project '$project_dir'. Skipping file search."
     else
-        # --- Find and process all matching code files recursively ---
-        # Use find -print0 and read -d '' for safe handling of filenames with spaces/special chars
+        # --- Find and process all matching files recursively ---
+        # Use find -print0 and read -d '' for safe handling of filenames
         # Sort -z sorts null-terminated strings (paths) alphabetically
         # The find command searches within the specific $project_dir
+        # Need to wrap the conditions in \( ... \) for proper precedence with -type f
         find "$project_dir" -type f \( "${find_args[@]}" \) -print0 | sort -z | while IFS= read -r -d $'\0' code_file; do
           # $code_file will contain the relative path like 'project_dir/subdir/file.c'
           echo "--- File: $code_file ---" >> "$PROJECT_OUTPUT_FILE"
-          cat "$code_file" >> "$PROJECT_OUTPUT_FILE"
+          # Check if file exists and is readable before catting
+          if [ -r "$code_file" ]; then
+              cat "$code_file" >> "$PROJECT_OUTPUT_FILE"
+          else
+              echo "Error: Could not read file '$code_file'" >> "$PROJECT_OUTPUT_FILE"
+          fi
           # Add blank lines for readability between files
           echo "" >> "$PROJECT_OUTPUT_FILE"
           echo "" >> "$PROJECT_OUTPUT_FILE"
         done
-    fi # End check for defined extensions
+    fi # End check for defined conditions
 
     echo " -> Created $PROJECT_OUTPUT_FILE"
 
