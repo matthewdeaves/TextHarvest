@@ -135,13 +135,20 @@ create_output_dir() {
     debug "$description '$dir' created/validated"
 }
 
-# Check available disk space
+# Check available disk space (cross-platform)
 check_disk_space() {
     local dir="$1"
     local min_space_mb="${2:-100}"
     
     local available_kb
-    available_kb=$(df "$dir" | awk 'NR==2 {print $4}')
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS version - df output format is different
+        available_kb=$(df -k "$dir" | awk 'NR==2 {print $4}')
+    else
+        # Linux version
+        available_kb=$(df "$dir" | awk 'NR==2 {print $4}')
+    fi
+    
     local available_mb=$((available_kb / 1024))
     
     if (( available_mb < min_space_mb )); then
@@ -169,11 +176,32 @@ count_files() {
     echo "$count"
 }
 
-# Get file size in human readable format
+# Get file size in human readable format (cross-platform)
 get_file_size() {
     local file="$1"
     if [[ -f "$file" ]]; then
-        stat -c%s "$file" | numfmt --to=iec
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS version
+            local size_bytes
+            size_bytes=$(stat -f%z "$file" 2>/dev/null || echo "0")
+            if command -v numfmt &> /dev/null; then
+                echo "$size_bytes" | numfmt --to=iec
+            else
+                # Fallback for macOS without numfmt
+                if (( size_bytes >= 1073741824 )); then
+                    echo "$((size_bytes / 1073741824))G"
+                elif (( size_bytes >= 1048576 )); then
+                    echo "$((size_bytes / 1048576))M"
+                elif (( size_bytes >= 1024 )); then
+                    echo "$((size_bytes / 1024))K"
+                else
+                    echo "${size_bytes}B"
+                fi
+            fi
+        else
+            # Linux version
+            stat -c%s "$file" | numfmt --to=iec
+        fi
     else
         echo "0"
     fi

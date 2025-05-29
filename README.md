@@ -88,4 +88,43 @@ The scripts (`process_code.sh`, `process_pdf_ocr.sh`) have configuration variabl
 
 ## Compatibility
 
-**Important:** These scripts have only been tested on **Ubuntu Linux**. They rely on the `apt` package manager for setup and common Linux command-line tools. They may require modification to run on other operating systems (like macOS or Windows/WSL) or other Linux distributions.
+TextHarvest v2.0.0 supports multiple platforms:
+
+### Supported Operating Systems:
+- **Linux** (Ubuntu/Debian, RHEL/CentOS/Fedora)
+- **macOS** (with Homebrew)
+
+### Package Managers:
+- **Linux**: `apt` (Ubuntu/Debian), `yum`/`dnf` (RHEL/CentOS/Fedora)
+- **macOS**: `brew` (Homebrew)
+
+### macOS Installation:
+
+1. **Install Homebrew** (if not already installed):
+   ```bash
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+   ```
+
+2. **Add Homebrew to PATH** (follow the instructions shown after Homebrew installation):
+   ```bash
+   # For Apple Silicon Macs:
+   export PATH="/opt/homebrew/bin:$PATH"
+   
+   # For Intel Macs:
+   export PATH="/usr/local/bin:$PATH"
+   ```
+
+3. **Run TextHarvest setup**:
+   ```bash
+   ./textharvest.sh setup
+   ```
+
+### Cross-Platform Usage:
+
+All commands work the same on both Linux and macOS:
+```bash
+./textharvest.sh help                    # Get help
+./textharvest.sh setup                   # Install dependencies  
+./textharvest.sh code --interactive      # Process code
+./textharvest.sh pdf-text --parallel     # Process PDFs
+```

@@ -126,3 +126,33 @@ TextHarvest v2.0.0 is a modernized collection of Bash shell scripts for automate
 ```
 
 The project maintains backward compatibility while providing enhanced functionality through the new unified interface.
+
+## Cross-Platform Support
+
+TextHarvest v2.0.0 works on both Linux and macOS:
+
+### Supported Platforms:
+- **Linux**: Ubuntu/Debian (apt), RHEL/CentOS/Fedora (yum/dnf)
+- **macOS**: Homebrew package manager
+
+### Platform Detection:
+The setup script automatically detects the operating system and package manager:
+```bash
+./textharvest.sh setup --list-packages  # Show what would be installed
+./textharvest.sh setup --dry-run        # Preview installation
+```
+
+### macOS-Specific Notes:
+- Requires Homebrew package manager
+- Uses different stat command syntax (`stat -f%z` vs `stat -c%s`)
+- Homebrew installs binaries to `/opt/homebrew/bin` (Apple Silicon) or `/usr/local/bin` (Intel)
+- All core functionality works identically to Linux
+
+### Development Testing:
+```bash
+# Test platform detection
+./textharvest.sh setup --force-platform macos --list-packages
+
+# Cross-platform file operations
+./textharvest.sh code --dry-run -v       # Works on both platforms
+```
