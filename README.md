@@ -1,111 +1,180 @@
-# TextHarvest: Document and Code Processing Utilities
+# 🌾 TextHarvest v2.0.0
 
-## Overview
+**Document and Code Processing Utilities for Linux and macOS**
 
-This project consists of a set of Bash shell scripts designed to automate common processing tasks for source code files and PDF documents on a Linux system. It allows you to:
+TextHarvest is a powerful, modernized collection of Bash shell scripts designed for automated document and source code processing. Version 2.0.0 introduces a unified CLI interface, cross-platform support, and enhanced functionality while maintaining the simplicity and effectiveness of the original design.
 
-1.  Generate combined source code listings from project directories.
-2.  Extract text directly from text-based PDF files.
-3.  Perform Optical Character Recognition (OCR) on image-based or scanned PDF files and then extract the recognized text.
+## ✨ Features
 
-## How it Works
+- **📁 Source Code Processing** - Generate consolidated listings from project directories
+- **📄 PDF Text Extraction** - Extract text directly from text-based PDF files
+- **🔍 OCR Processing** - Perform optical character recognition on scanned/image PDFs
+- **🖥️ Cross-Platform** - Works on Linux (Ubuntu/Debian, RHEL/CentOS/Fedora) and macOS
+- **⚡ Parallel Processing** - Multi-threaded operations for improved performance
+- **🎛️ Interactive Mode** - User-friendly file and project selection
+- **⚙️ Configuration Management** - Hierarchical config system with environment overrides
+- **🧪 Dry Run Mode** - Preview operations before execution
 
-The project uses separate scripts for different tasks, relying on standard Linux command-line tools.
+## 🚀 Quick Start
 
-**Directory Structure:**
+### Installation
 
-The scripts expect a specific directory structure for input files:
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/user/textharvest.git
+   cd textharvest
+   ```
 
-*   `source_code/`: Place individual project folders inside this directory. The `process_code.sh` script will look for source files within each subfolder here.
-*   `source_pdf/`: Place all PDF files you want to process (either for direct text extraction or OCR) in this directory.
+2. **Make the main script executable:**
+   ```bash
+   chmod +x textharvest.sh
+   ```
 
-Output files are generated in separate directories created by the scripts:
+3. **Install dependencies:**
+   ```bash
+   ./textharvest.sh setup
+   ```
 
-*   `code_listings/`: Contains text files, one for each project found in `source_code/`, listing the concatenated content of its source files.
-*   `text_output/`: Contains text files extracted directly from PDFs using `process_pdf_text.sh`.
-*   `ocr_pdf_output/`: Contains intermediate PDF files that have had an OCR text layer added by `process_pdf_ocr.sh`.
-*   `ocr_text_output/`: Contains the final text files extracted from the OCR'd PDFs by `process_pdf_ocr.sh`.
+### First Use
 
-**Scripts:**
+1. **Create input directories:**
+   ```bash
+   mkdir source_code source_pdf
+   ```
 
-1.  **`setup.sh`**:
-    *   **Purpose:** Installs the necessary software dependencies required by the other scripts.
-    *   **Method:** Uses the `apt` package manager (common on Debian/Ubuntu) to install `poppler-utils` (for `pdftotext`), `ocrmypdf`, `tesseract-ocr`, and the English language pack for Tesseract (`tesseract-ocr-eng`).
+2. **Add your files:**
+   - Place project folders in `source_code/`
+   - Place PDF files in `source_pdf/`
 
-2.  **`process_code.sh`**:
-    *   **Purpose:** Creates a single text file for each project directory found within `source_code/`. This text file contains the concatenated content of all recognized source code files within that project.
-    *   **Method:** It recursively searches each project directory for files matching a predefined list of extensions (e.g., `.c`, `.py`, `.java`, `.sh`). It then concatenates the content of these files, adding headers indicating the filename, into an output file named `[project_name]_listing.txt` within the `code_listings/` directory.
+3. **Process your files:**
+   ```bash
+   ./textharvest.sh code --interactive     # Process source code
+   ./textharvest.sh pdf-text --parallel    # Extract PDF text
+   ./textharvest.sh pdf-ocr -l eng+fra     # OCR with multiple languages
+   ```
 
-3.  **`process_pdf_text.sh`**:
-    *   **Purpose:** Extracts text content directly from PDF files that already contain selectable text (i.e., not image-only PDFs).
-    *   **Method:** It iterates through all `.pdf` files in the `source_pdf/` directory and uses the `pdftotext` command to extract the text into corresponding `.txt` files in the `text_output/` directory.
+## 📋 Command Reference
 
-4.  **`process_pdf_ocr.sh`**:
-    *   **Purpose:** Processes PDF files, performs OCR to recognize text (useful for scanned documents or image-based PDFs), and then extracts this recognized text into text files.
-    *   **Method:**
-        *   It iterates through all `.pdf` files in `source_pdf/`.
-        *   For each PDF, it runs `ocrmypdf`, which uses the Tesseract OCR engine to create a new PDF with a text layer in the `ocr_pdf_output/` directory.
-        *   It then runs `pdftotext` on this *new* OCR'd PDF to extract the recognized text into a `.txt` file in the `ocr_text_output/` directory.
+### Main Commands
 
-## How to Use
+| Command | Description |
+|---------|-------------|
+| `code` | Generate source code listings from project directories |
+| `pdf-text` | Extract text directly from text-based PDF files |
+| `pdf-ocr` | OCR and extract text from scanned/image PDF files |
+| `setup` | Install required dependencies |
+| `config` | Manage configuration settings |
+| `version` | Show version information |
+| `help` | Show help information |
 
-**1. Setup (Install Dependencies):**
+### Global Options
 
-*   Make sure you are on a Debian-based Linux distribution like Ubuntu.
-*   Open your terminal.
-*   Navigate to the directory containing these scripts.
-*   Make the setup script executable: `chmod +x setup.sh`
-*   Run the setup script with root privileges: `sudo ./setup.sh`
-*   This will update your package list and install `poppler-utils`, `ocrmypdf`, `tesseract-ocr`, and `tesseract-ocr-eng`.
-*   If you need to process PDFs in languages other than English, you'll need to install the corresponding Tesseract language packs (e.g., `sudo apt install tesseract-ocr-fra` for French). You may also need to update the `OCR_LANG` variable in `process_pdf_ocr.sh`.
+| Option | Description |
+|--------|-------------|
+| `-v, --verbose` | Verbose output |
+| `-vv` | Very verbose output (debug) |
+| `-q, --quiet` | Quiet mode |
+| `--dry-run` | Preview operations without executing |
+| `--help` | Show help for any command |
 
-**2. Prepare Input Files:**
+### Usage Examples
 
-*   Create the input directories if they don't exist:
-    *   `mkdir source_code`
-    *   `mkdir source_pdf`
-*   Place your project folders (containing source code) inside the `source_code/` directory.
-*   Place the PDF files you want to process inside the `source_pdf/` directory.
+```bash
+# Get help for specific commands
+./textharvest.sh code --help
+./textharvest.sh pdf-ocr --help
 
-**3. Run Processing Scripts:**
+# Interactive project selection
+./textharvest.sh code --interactive
 
-*   Make the processing scripts executable:
-    *   `chmod +x process_code.sh`
-    *   `chmod +x process_pdf_text.sh`
-    *   `chmod +x process_pdf_ocr.sh`
-*   Run the desired script from the terminal in the directory where the scripts are located:
-    *   To generate source code listings: `./process_code.sh`
-    *   To extract text from text-based PDFs: `./process_pdf_text.sh`
-    *   To OCR and extract text from PDFs: `./process_pdf_ocr.sh`
+# Parallel processing with custom directories
+./textharvest.sh pdf-text --parallel -i my_pdfs -o text_results
 
-**4. Check Output:**
+# OCR with multiple languages
+./textharvest.sh pdf-ocr -l eng+fra+deu --force-ocr
 
-*   After running a script, check the corresponding output directory (`code_listings/`, `text_output/`, or `ocr_text_output/`) for the generated files.
+# Dry run to preview operations
+./textharvest.sh code --dry-run --verbose
 
-## Configuration
+# Custom configuration
+./textharvest.sh config --init
+./textharvest.sh config --show
+```
 
-The scripts (`process_code.sh`, `process_pdf_ocr.sh`) have configuration variables defined near the top (e.g., `CODE_DIR`, `OUTPUT_DIR`, `CODE_EXTENSIONS`, `OCR_LANG`, `OCRMYPDF_ARGS`). You can modify these variables directly in the scripts if you need to change input/output locations, recognized file types, or OCR settings.
+## 📂 Directory Structure
 
-## Compatibility
+### Input Directories
+- **`source_code/`** - Project subdirectories containing source files
+- **`source_pdf/`** - PDF files for text extraction or OCR processing
 
-TextHarvest v2.0.0 supports multiple platforms:
+### Output Directories (auto-created)
+- **`code_listings/`** - Generated source code listings
+- **`text_output/`** - PDF text extraction results
+- **`ocr_pdf_output/`** - Intermediate OCR-processed PDFs
+- **`ocr_text_output/`** - Final OCR text extraction results
 
-### Supported Operating Systems:
-- **Linux** (Ubuntu/Debian, RHEL/CentOS/Fedora)
-- **macOS** (with Homebrew)
+### Project Files
+```
+TextHarvest/
+├── textharvest.sh          # Main CLI interface
+├── textharvest.conf        # Configuration template
+├── setup.sh               # Cross-platform installer
+├── lib/
+│   └── common.sh          # Shared utility functions
+├── process_code.sh        # Source code processing
+├── process_pdf_text.sh    # PDF text extraction
+├── process_pdf_ocr.sh     # OCR processing
+└── README.md              # This file
+```
 
-### Package Managers:
-- **Linux**: `apt` (Ubuntu/Debian), `yum`/`dnf` (RHEL/CentOS/Fedora)
-- **macOS**: `brew` (Homebrew)
+## ⚙️ Configuration
 
-### macOS Installation:
+### Configuration Hierarchy
+
+Configuration files are loaded in this order (later files override earlier ones):
+
+1. **`/etc/textharvest.conf`** - System-wide settings
+2. **`~/.textharvest.conf`** - User settings  
+3. **`./textharvest.conf`** - Local project settings
+
+### Environment Variables (highest priority)
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `TEXTHARVEST_CODE_DIR` | Source code input directory | `source_code` |
+| `TEXTHARVEST_PDF_DIR` | PDF input directory | `source_pdf` |
+| `TEXTHARVEST_VERBOSE_LEVEL` | Default verbosity (0-3) | `1` |
+| `TEXTHARVEST_MAX_JOBS` | Parallel processing jobs | `4` |
+
+### Configuration Management
+
+```bash
+# Create configuration files
+./textharvest.sh config --init              # Create local config
+./textharvest.sh config --init --global     # Create user config
+
+# View and validate settings
+./textharvest.sh config --show              # Show current settings
+./textharvest.sh config --validate          # Verify configuration
+```
+
+## 🖥️ Cross-Platform Support
+
+### Supported Platforms
+
+| Platform | Package Managers | Status |
+|----------|------------------|--------|
+| **Linux** | `apt` (Ubuntu/Debian)<br>`yum`/`dnf` (RHEL/CentOS/Fedora) | ✅ Full support |
+| **macOS** | `brew` (Homebrew) | ✅ Full support |
+
+### macOS Installation
 
 1. **Install Homebrew** (if not already installed):
    ```bash
    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
    ```
 
-2. **Add Homebrew to PATH** (follow the instructions shown after Homebrew installation):
+2. **Add Homebrew to PATH**:
    ```bash
    # For Apple Silicon Macs:
    export PATH="/opt/homebrew/bin:$PATH"
@@ -119,12 +188,143 @@ TextHarvest v2.0.0 supports multiple platforms:
    ./textharvest.sh setup
    ```
 
-### Cross-Platform Usage:
+### Platform-Specific Features
 
-All commands work the same on both Linux and macOS:
+- **Automatic OS detection** and package manager selection
+- **Cross-platform file operations** with proper path handling
+- **Native dependency installation** for each platform
+- **Consistent CLI behavior** across all supported systems
+
+## 🔧 Dependencies
+
+TextHarvest automatically installs these dependencies via your system's package manager:
+
+| Tool | Purpose | Linux Package | macOS Package |
+|------|---------|---------------|---------------|
+| **poppler** | PDF text extraction | `poppler-utils` | `poppler` |
+| **tesseract** | OCR engine | `tesseract-ocr` | `tesseract` |
+| **ocrmypdf** | PDF OCR processing | `pip install ocrmypdf` | `ocrmypdf` |
+| **Language packs** | OCR languages | `tesseract-ocr-eng` | `tesseract-lang` |
+
+### Manual Installation
+
+If you prefer to install dependencies manually:
+
+**Linux (Ubuntu/Debian):**
 ```bash
-./textharvest.sh help                    # Get help
-./textharvest.sh setup                   # Install dependencies  
-./textharvest.sh code --interactive      # Process code
-./textharvest.sh pdf-text --parallel     # Process PDFs
+sudo apt update
+sudo apt install poppler-utils tesseract-ocr tesseract-ocr-eng python3-pip
+pip3 install --user ocrmypdf
 ```
+
+**Linux (RHEL/CentOS/Fedora):**
+```bash
+sudo dnf install poppler-utils tesseract tesseract-langpack-eng python3-pip
+pip3 install --user ocrmypdf
+```
+
+**macOS (Homebrew):**
+```bash
+brew install poppler tesseract tesseract-lang ocrmypdf
+```
+
+## 🎯 Use Cases
+
+### Source Code Documentation
+- **Project archival** - Create comprehensive text-based documentation
+- **Code review preparation** - Generate consolidated listings for review
+- **Documentation generation** - Extract code for technical documentation
+- **Analysis and auditing** - Prepare code for external analysis tools
+
+### Document Processing
+- **Research workflows** - Extract text from academic papers and reports
+- **Data extraction** - Convert PDFs to searchable text for analysis
+- **Archive digitization** - OCR scanned documents and legacy files
+- **Content migration** - Extract text for content management systems
+
+### Batch Processing
+- **Automated workflows** - Process hundreds of files efficiently
+- **CI/CD integration** - Generate documentation as part of build processes
+- **Content indexing** - Prepare documents for search engines
+- **Format conversion** - Convert document collections to text format
+
+## 🔍 Advanced Features
+
+### Interactive Mode
+```bash
+./textharvest.sh code --interactive
+```
+- Browse and select specific projects or files
+- Preview operations before execution
+- Step-by-step processing with user confirmation
+
+### Parallel Processing
+```bash
+./textharvest.sh pdf-text --parallel --max-jobs 8
+```
+- Multi-threaded processing for large file collections
+- Configurable job limits for system optimization
+- Progress tracking and ETA calculations
+
+### OCR Customization
+```bash
+./textharvest.sh pdf-ocr -l eng+fra+deu --deskew --clean
+```
+- Multiple language support
+- Image preprocessing options
+- Customizable OCR parameters
+
+### Dry Run Mode
+```bash
+./textharvest.sh code --dry-run --verbose
+```
+- Preview operations without making changes
+- Validate input files and directories
+- Test configuration and command syntax
+
+## 🏗️ Architecture
+
+### Modular Design
+
+TextHarvest v2.0.0 features a modern, modular architecture:
+
+- **Unified CLI Interface** - Single entry point (`textharvest.sh`) for all operations
+- **Shared Library** - Common functions in `lib/common.sh` for consistency
+- **Configuration System** - Hierarchical config with environment variable overrides
+- **Error Handling** - Comprehensive error checking and user feedback
+- **Progress Tracking** - Real-time progress indicators and timing information
+
+### Key Improvements from v1.x
+
+- ✅ **Single command interface** replaces multiple scripts
+- ✅ **Cross-platform support** for Linux and macOS
+- ✅ **Interactive modes** for better user experience
+- ✅ **Configuration management** system
+- ✅ **Parallel processing** capabilities
+- ✅ **Dry run mode** for safe operation testing
+- ✅ **Enhanced error handling** and logging
+- ✅ **Plugin architecture** foundation for extensibility
+
+## 🤝 Contributing
+
+TextHarvest is designed to be simple, reliable, and extensible. Contributions are welcome for:
+
+- Additional file format support
+- Platform compatibility improvements
+- Performance optimizations
+- Documentation enhancements
+- Bug fixes and feature requests
+
+## 📝 License
+
+This project is open source. Please check the repository for specific license terms.
+
+## 🔗 Links
+
+- **GitHub Repository**: [https://github.com/user/textharvest](https://github.com/user/textharvest)
+- **Issue Tracker**: Report bugs and request features
+- **Documentation**: Additional guides and examples
+
+---
+
+**TextHarvest v2.0.0** - Efficient document and code processing for the modern developer.
