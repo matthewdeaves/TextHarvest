@@ -3,6 +3,9 @@
 # TextHarvest Common Library
 # Shared functions for all TextHarvest scripts
 # Version: 2.0.0
+#
+# Copyright (c) 2025 Matthew Deaves
+# Licensed under the MIT License - see LICENSE file for details
 
 # Global variables
 TEXTHARVEST_VERSION="2.0.0"

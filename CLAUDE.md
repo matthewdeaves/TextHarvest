@@ -363,3 +363,32 @@ v2.0.0 maintains compatibility with v1.x through:
 - Migration path via unified CLI
 
 This ensures existing workflows continue to work while providing enhanced functionality through the new interface.
+
+## License Information
+
+TextHarvest is licensed under the MIT License, which means:
+
+### For Users:
+- ✅ **Free to use** for any purpose (personal, commercial, educational)
+- ✅ **Free to modify** and customize for your needs
+- ✅ **Free to distribute** original or modified versions
+- ✅ **No restrictions** on usage or redistribution
+
+### For Contributors:
+- 📋 **Attribution required** - Keep the copyright notice in source files
+- 🔧 **Add license headers** to new files following the existing pattern
+- 📝 **Document changes** appropriately in commit messages
+- 🤝 **Respect the license** when incorporating external code
+
+### License Header Template:
+```bash
+#!/bin/bash
+
+# [Script Name]
+# [Brief description]
+#
+# Copyright (c) 2025 Matthew Deaves
+# Licensed under the MIT License - see LICENSE file for details
+```
+
+The MIT License promotes maximum adoption and contribution while requiring minimal restrictions. This aligns perfectly with TextHarvest's goal of being a simple, effective tool that anyone can use and improve.

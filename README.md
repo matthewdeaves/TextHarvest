@@ -317,11 +317,18 @@ TextHarvest is designed to be simple, reliable, and extensible. Contributions ar
 
 ## 📝 License
 
-This project is open source. Please check the repository for specific license terms.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+**MIT License Summary:**
+- ✅ Commercial use allowed
+- ✅ Modification and distribution permitted  
+- ✅ Private use encouraged
+- ✅ No warranty or liability
+- 📋 Attribution required (keep copyright notice)
 
 ## 🔗 Links
 
-- **GitHub Repository**: [https://github.com/user/textharvest](https://github.com/user/textharvest)
+- **GitHub Repository**: [https://github.com/matthewdeaves/textharvest](https://github.com/matthewdeaves/textharvest)
 - **Issue Tracker**: Report bugs and request features
 - **Documentation**: Additional guides and examples
 

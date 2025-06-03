@@ -2,6 +2,9 @@
 
 # TextHarvest Unified CLI v2.0.0
 # Main interface for all TextHarvest processing tasks
+# 
+# Copyright (c) 2025 Matthew Deaves
+# Licensed under the MIT License - see LICENSE file for details
 
 # Load common library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
