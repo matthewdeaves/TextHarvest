@@ -123,6 +123,7 @@ get_packages() {
                 "tesseract-ocr"      # OCR engine
                 "tesseract-ocr-eng"  # English language pack
                 "python3-pip"        # For installing ocrmypdf
+                "python3-venv"       # For creating virtual environments
             )
             ;;
         yum|dnf)
@@ -131,6 +132,7 @@ get_packages() {
                 "tesseract"          # OCR engine
                 "tesseract-langpack-eng"  # English language pack
                 "python3-pip"        # For installing ocrmypdf
+                "python3-venv"       # For creating virtual environments
             )
             ;;
         brew)
@@ -272,45 +274,51 @@ install_python_packages() {
     mapfile -t python_packages < <(get_python_packages "$pm")
     
     if [[ ${#python_packages[@]} -eq 0 ]]; then
-        info "No Python packages to install"
+        info "No Python packages to install via pip"
         return 0
     fi
     
-    info "Installing Python packages: ${python_packages[*]}"
+    info "Installing Python packages into a virtual environment: ${python_packages[*]}"
+
+    local venv_dir="$SCRIPT_DIR/venv"
     
     if [[ "$dry_run" == true ]]; then
+        info "DRY RUN: Would create virtual environment at $venv_dir"
         info "DRY RUN: Would install Python packages: ${python_packages[*]}"
         return 0
     fi
-    
-    # Try different pip commands
-    local pip_cmd=""
-    for cmd in pip3 pip python3-pip python-pip; do
-        if command -v "$cmd" &> /dev/null; then
-            pip_cmd="$cmd"
-            break
+
+    # Create virtual environment if it doesn't exist
+    if [[ ! -d "$venv_dir" ]]; then
+        info "Creating Python virtual environment at $venv_dir..."
+        if ! python3 -m venv "$venv_dir"; then
+            error_exit "Failed to create Python virtual environment."
         fi
-    done
-    
-    if [[ -z "$pip_cmd" ]]; then
-        error_exit "No pip command found. Please install pip first."
-    fi
-    
-    if "$pip_cmd" install --user "${python_packages[@]}"; then
-        success "Python packages installed successfully"
     else
-        error_exit "Failed to install Python packages"
+        info "Virtual environment already exists at $venv_dir"
+    fi
+
+    # Install packages using pip from the virtual environment
+    local pip_cmd="$venv_dir/bin/pip"
+    
+    if "$pip_cmd" install "${python_packages[@]}"; then
+        success "Python packages installed successfully in $venv_dir"
+    else
+        error_exit "Failed to install Python packages into the virtual environment"
     fi
 }
 
 # Verify installation
 verify_installation() {
-    local -a required_commands=("pdftotext" "tesseract" "ocrmypdf")
+    local -a system_commands=("pdftotext" "tesseract")
+    local venv_dir="$SCRIPT_DIR/venv"
+    local -a venv_commands=("ocrmypdf")
     local failed=0
     
     info "Verifying installation..."
     
-    for cmd in "${required_commands[@]}"; do
+    # Verify system-wide commands
+    for cmd in "${system_commands[@]}"; do
         if command -v "$cmd" &> /dev/null; then
             local version
             case "$cmd" in
@@ -320,9 +328,6 @@ verify_installation() {
                 tesseract)
                     version=$(tesseract --version 2>&1 | head -n1 || echo "unknown")
                     ;;
-                ocrmypdf)
-                    version=$(ocrmypdf --version 2>&1 || echo "unknown")
-                    ;;
             esac
             success "$cmd is available - $version"
         else
@@ -330,16 +335,36 @@ verify_installation() {
             ((failed++))
         fi
     done
+
+    # Verify commands in virtual environment
+    for cmd in "${venv_commands[@]}"; do
+        if [[ -x "$venv_dir/bin/$cmd" ]]; then
+            local version=$("$venv_dir/bin/$cmd" --version 2>&1 || echo "unknown")
+            success "$cmd is available in the virtual environment - $version"
+        else
+            warn "$cmd is not available in the virtual environment ($venv_dir/bin/$cmd)"
+            ((failed++))
+        fi
+    done
     
     if [[ $failed -eq 0 ]]; then
         success "All required tools are installed and available"
         echo ""
-        info "You can now use TextHarvest commands:"
-        echo "  ./textharvest.sh code --help"
-        echo "  ./textharvest.sh pdf-text --help" 
-        echo "  ./textharvest.sh pdf-ocr --help"
+        info "The 'ocrmypdf' command has been installed in a virtual environment."
+        info "To use it, you can either activate the environment or call the executable directly:"
+        echo ""
+        echo "  1. Activate the virtual environment (recommended for interactive sessions):"
+        echo "     source venv/bin/activate"
+        echo "     # Now you can run the scripts directly"
+        echo "     ./textharvest.sh pdf-ocr --help"
+        echo "     # Deactivate when you are done"
+        echo "     deactivate"
+        echo ""
+        echo "  2. Run the scripts directly (they will use the venv automatically):"
+        echo "     ./textharvest.sh pdf-ocr --help"
+        echo ""
     else
-        error_exit "$failed required tools are missing"
+        error_exit "$failed required tools are missing or not configured correctly."
     fi
 }
 

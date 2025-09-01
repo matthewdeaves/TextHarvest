@@ -9,3 +9,6 @@ source_code/*
 !/source_code/.gitkeep
 source_pdf/*
 !/source_pdf/.gitkeep
+
+# virtual environment
+venv/

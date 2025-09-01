@@ -10,6 +10,12 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/common.sh" || { echo "Error: Cannot load common library"; exit 1; }
 
+# Venv configuration
+VENV_DIR="$SCRIPT_DIR/venv"
+if [[ -d "$VENV_DIR" ]]; then
+    export PATH="$VENV_DIR/bin:$PATH"
+fi
+
 # Script-specific variables
 SCRIPT_NAME="$(basename "$0")"
 
