@@ -135,18 +135,18 @@ select_pdfs_interactive() {
     fi
     
     while true; do
-        echo ""
-        info "Available PDFs in '$PDF_DIR':"
+        echo "" >&2
+        echo "Available PDFs in '$PDF_DIR':" >&2
         for i in "${!all_pdfs[@]}"; do
-            printf "  %2d) %s\n" "$((i + 1))" "$(basename "${all_pdfs[$i]}")"
+            printf "  %2d) %s\n" "$((i + 1))" "$(basename "${all_pdfs[$i]}")" >&2
         done
-        
-        echo ""
-        echo "Options:"
-        echo "  a) Process ALL PDFs"
-        echo "  1,2,3) Select specific PDFs (comma-separated)"
-        echo "  q) Quit"
-        
+
+        echo "" >&2
+        echo "Options:" >&2
+        echo "  a) Process ALL PDFs" >&2
+        echo "  1,2,3) Select specific PDFs (comma-separated)" >&2
+        echo "  q) Quit" >&2
+
         read -r -p "Enter your choice: " choice
         
         case "$choice" in

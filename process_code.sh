@@ -152,18 +152,18 @@ select_projects_interactive() {
     fi
     
     while true; do
-        echo ""
-        info "Available projects in '$CODE_DIR':"
+        echo "" >&2
+        echo "Available projects in '$CODE_DIR':" >&2
         for i in "${!all_projects[@]}"; do
-            printf "  %2d) %s\n" "$((i + 1))" "${all_projects[$i]}"
+            printf "  %2d) %s\n" "$((i + 1))" "${all_projects[$i]}" >&2
         done
-        
-        echo ""
-        echo "Options:"
-        echo "  a) Process ALL projects"
-        echo "  1,2,3) Select specific projects (comma-separated)"
-        echo "  q) Quit"
-        
+
+        echo "" >&2
+        echo "Options:" >&2
+        echo "  a) Process ALL projects" >&2
+        echo "  1,2,3) Select specific projects (comma-separated)" >&2
+        echo "  q) Quit" >&2
+
         read -r -p "Enter your choice: " choice
         
         case "$choice" in
