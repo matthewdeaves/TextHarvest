@@ -340,13 +340,17 @@ verify_installation() {
         fi
     done
 
-    # Verify commands in virtual environment
+    # Verify commands in virtual environment (or system-wide on macOS/brew)
     for cmd in "${venv_commands[@]}"; do
         if [[ -x "$venv_dir/bin/$cmd" ]]; then
             local version=$("$venv_dir/bin/$cmd" --version 2>&1 || echo "unknown")
             success "$cmd is available in the virtual environment - $version"
+        elif command -v "$cmd" &> /dev/null; then
+            # Check if it's available system-wide (e.g., installed via brew on macOS)
+            local version=$("$cmd" --version 2>&1 | head -n1 || echo "unknown")
+            success "$cmd is available system-wide - $version"
         else
-            warn "$cmd is not available in the virtual environment ($venv_dir/bin/$cmd)"
+            warn "$cmd is not available in the virtual environment ($venv_dir/bin/$cmd) or system-wide"
             ((failed++))
         fi
     done
@@ -354,19 +358,27 @@ verify_installation() {
     if [[ $failed -eq 0 ]]; then
         success "All required tools are installed and available"
         echo ""
-        info "The 'ocrmypdf' command has been installed in a virtual environment."
-        info "To use it, you can either activate the environment or call the executable directly:"
-        echo ""
-        echo "  1. Activate the virtual environment (recommended for interactive sessions):"
-        echo "     source venv/bin/activate"
-        echo "     # Now you can run the scripts directly"
-        echo "     ./textharvest.sh pdf-ocr --help"
-        echo "     # Deactivate when you are done"
-        echo "     deactivate"
-        echo ""
-        echo "  2. Run the scripts directly (they will use the venv automatically):"
-        echo "     ./textharvest.sh pdf-ocr --help"
-        echo ""
+        # Show venv instructions only if venv was created
+        if [[ -d "$venv_dir" && -x "$venv_dir/bin/ocrmypdf" ]]; then
+            info "The 'ocrmypdf' command has been installed in a virtual environment."
+            info "To use it, you can either activate the environment or call the executable directly:"
+            echo ""
+            echo "  1. Activate the virtual environment (recommended for interactive sessions):"
+            echo "     source venv/bin/activate"
+            echo "     # Now you can run the scripts directly"
+            echo "     ./textharvest.sh pdf-ocr --help"
+            echo "     # Deactivate when you are done"
+            echo "     deactivate"
+            echo ""
+            echo "  2. Run the scripts directly (they will use the venv automatically):"
+            echo "     ./textharvest.sh pdf-ocr --help"
+            echo ""
+        else
+            info "All tools are available system-wide. You can run the scripts directly:"
+            echo ""
+            echo "     ./textharvest.sh pdf-ocr --help"
+            echo ""
+        fi
     else
         error_exit "$failed required tools are missing or not configured correctly."
     fi

@@ -480,12 +480,12 @@ jobs:
             exit 1
           fi
 
-          # Should fail with impossibly large requirement
-          if ! check_disk_space "." 999999999 2>/dev/null; then
-            echo "PASS: check_disk_space() fails with huge requirement"
-          else
+          # Should fail with impossibly large requirement (run in subshell to avoid error_exit)
+          if (check_disk_space "." 999999999 2>/dev/null); then
             echo "FAIL: check_disk_space() should fail with impossible requirement"
             exit 1
+          else
+            echo "PASS: check_disk_space() fails with huge requirement"
           fi
 
   # =============================================================================
@@ -580,8 +580,8 @@ jobs:
         run: |
           echo "Testing CLI verbose flags..."
 
-          # Test -v flag is recognized (check help with verbose)
-          if ./textharvest.sh -v --help >/dev/null 2>&1; then
+          # Test -v flag with help command
+          if ./textharvest.sh -v help >/dev/null 2>&1; then
             echo "PASS: -v flag accepted"
           else
             echo "FAIL: -v flag should be accepted"
@@ -589,7 +589,7 @@ jobs:
           fi
 
           # Test -vv flag
-          if ./textharvest.sh -vv --help >/dev/null 2>&1; then
+          if ./textharvest.sh -vv help >/dev/null 2>&1; then
             echo "PASS: -vv flag accepted"
           else
             echo "FAIL: -vv flag should be accepted"
@@ -597,7 +597,7 @@ jobs:
           fi
 
           # Test -q flag
-          if ./textharvest.sh -q --help >/dev/null 2>&1; then
+          if ./textharvest.sh -q help >/dev/null 2>&1; then
             echo "PASS: -q flag accepted"
           else
             echo "FAIL: -q flag should be accepted"
@@ -953,13 +953,17 @@ jobs:
             exit 1
           fi
 
-      - name: Verify ocrmypdf installed (in venv)
+      - name: Verify ocrmypdf installed
         run: |
+          # On Linux it's in venv, on macOS it's installed via brew
           if [[ -x "./venv/bin/ocrmypdf" ]]; then
             ./venv/bin/ocrmypdf --version 2>&1 | head -1
             echo "PASS: ocrmypdf is installed in venv"
+          elif command -v ocrmypdf &> /dev/null; then
+            ocrmypdf --version 2>&1 | head -1
+            echo "PASS: ocrmypdf is installed via system package manager"
           else
-            echo "FAIL: ocrmypdf not found in venv"
+            echo "FAIL: ocrmypdf not found"
             exit 1
           fi
 

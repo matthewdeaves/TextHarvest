@@ -285,8 +285,9 @@ load_config() {
 get_config() {
     local var_name="$1"
     local default_value="$2"
-    local env_var="TEXTHARVEST_${var_name^^}"
-    
+    # Bash 3.2 compatible uppercase conversion
+    local env_var="TEXTHARVEST_$(echo "$var_name" | tr '[:lower:]' '[:upper:]')"
+
     # Priority: environment variable > config file > default
     if [[ -n "${!env_var}" ]]; then
         echo "${!env_var}"
