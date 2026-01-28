@@ -325,12 +325,12 @@ jobs:
             exit 1
           fi
 
-          # Test validate_input_dir with non-existing directory
-          if ! validate_input_dir "/nonexistent/path/$$" "Test" 2>/dev/null; then
-            echo "PASS: validate_input_dir() rejects non-existing directory"
-          else
+          # Test validate_input_dir with non-existing directory (runs in subshell to avoid exit)
+          if (validate_input_dir "/nonexistent/path/$$" "Test" 2>/dev/null); then
             echo "FAIL: validate_input_dir() should reject non-existing directory"
             exit 1
+          else
+            echo "PASS: validate_input_dir() rejects non-existing directory"
           fi
 
           # Test create_output_dir
@@ -343,12 +343,12 @@ jobs:
             exit 1
           fi
 
-          # Test create_output_dir with empty path
-          if ! create_output_dir "" "Empty" 2>/dev/null; then
-            echo "PASS: create_output_dir() rejects empty path"
-          else
+          # Test create_output_dir with empty path (runs in subshell to avoid exit)
+          if (create_output_dir "" "Empty" 2>/dev/null); then
             echo "FAIL: create_output_dir() should reject empty path"
             exit 1
+          else
+            echo "PASS: create_output_dir() rejects empty path"
           fi
 
       - name: Test configuration functions
@@ -568,7 +568,7 @@ jobs:
           fi
 
           # Test no command shows help and exits with error
-          output=$(./textharvest.sh 2>&1)
+          output=$(./textharvest.sh 2>&1 || true)
           if [[ "$output" == *"USAGE:"* ]]; then
             echo "PASS: No command shows help"
           else
@@ -661,26 +661,22 @@ jobs:
       - name: Test OS detection
         run: |
           echo "Testing OS detection..."
-          source lib/common.sh
-          source setup.sh --help >/dev/null 2>&1 || true
 
-          # Source setup.sh functions
-          source <(grep -A 20 '^detect_os()' setup.sh)
-
-          os_type=$(detect_os)
+          # Test using the actual setup script
+          output=$(./setup.sh --list-packages 2>&1)
 
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            if [[ "$os_type" == "linux" ]]; then
+            if [[ "$output" == *"Platform: linux"* ]]; then
               echo "PASS: Detected linux on Ubuntu runner"
             else
-              echo "FAIL: Should detect linux, got $os_type"
+              echo "FAIL: Should detect linux, got: $output"
               exit 1
             fi
           elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            if [[ "$os_type" == "macos" ]]; then
+            if [[ "$output" == *"Platform: macos"* ]]; then
               echo "PASS: Detected macos on macOS runner"
             else
-              echo "FAIL: Should detect macos, got $os_type"
+              echo "FAIL: Should detect macos, got: $output"
               exit 1
             fi
           fi
@@ -689,28 +685,21 @@ jobs:
         run: |
           echo "Testing package manager detection..."
 
-          # Source the detect functions from setup.sh
-          source <(grep -A 30 '^detect_package_manager()' setup.sh)
-          source <(grep -A 20 '^detect_os()' setup.sh)
-
-          # Also need warn function
-          warn() { echo "WARNING: $1" >&2; }
-
-          os_type=$(detect_os)
-          pm=$(detect_package_manager "$os_type")
+          # Test using the actual setup script
+          output=$(./setup.sh --list-packages 2>&1)
 
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            if [[ "$pm" == "apt" ]]; then
+            if [[ "$output" == *"Package Manager: apt"* ]]; then
               echo "PASS: Detected apt on Ubuntu"
             else
-              echo "FAIL: Should detect apt, got $pm"
+              echo "FAIL: Should detect apt"
               exit 1
             fi
           elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            if [[ "$pm" == "brew" ]]; then
+            if [[ "$output" == *"Package Manager: brew"* ]]; then
               echo "PASS: Detected brew on macOS"
             else
-              echo "FAIL: Should detect brew, got $pm"
+              echo "FAIL: Should detect brew"
               exit 1
             fi
           fi
