@@ -1106,8 +1106,8 @@ jobs:
         run: |
           echo "Testing PDF text extraction..."
 
-          # Install reportlab for PDF creation
-          pip3 install reportlab
+          # Install reportlab for PDF creation (macOS requires --break-system-packages)
+          pip3 install reportlab --break-system-packages
 
           # Create a simple test PDF
           python3 << 'EOF'
@@ -1168,6 +1168,7 @@ jobs:
 
           mkdir -p source_pdf
 
+          # reportlab already installed from previous step
           # Create test PDF
           python3 << 'EOF'
           from reportlab.lib.pagesizes import letter
