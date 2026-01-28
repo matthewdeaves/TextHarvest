@@ -123,7 +123,7 @@ while true; do # Main menu loop
       # File selection sub-menu loop
       while true; do
         current_selection_this_attempt=() # Reset for this specific attempt
-        declare -A unique_indices_chosen    # Reset for this specific attempt to track unique indices
+        unique_indices_chosen=""    # Reset for this specific attempt to track unique indices (space-separated string for bash 3.2 compatibility)
 
         echo ""
         read -r -p "Enter file numbers (comma-separated, e.g., 1,3,5), 'a' for all listed, or 'b' for back: " selection_input
@@ -158,9 +158,9 @@ while true; do # Main menu loop
             break # Exit this for-loop
           fi
 
-          if [[ -z "${unique_indices_chosen[$actual_index]}" ]]; then # Check if index already picked in *this* input string
+          if [[ ! " $unique_indices_chosen " =~ " $actual_index " ]]; then # Check if index already picked in *this* input string (bash 3.2 compatible)
             current_selection_this_attempt+=("${all_pdf_files_in_dir[$actual_index]}")
-            unique_indices_chosen[$actual_index]=1
+            unique_indices_chosen="$unique_indices_chosen $actual_index"
           else
             echo "Note: File number $index_str_trimmed ('$(basename "${all_pdf_files_in_dir[$actual_index]}")') was already included in this specific entry. Processing once."
           fi

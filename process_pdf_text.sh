@@ -193,7 +193,9 @@ select_pdfs_interactive() {
 # Discover PDFs to process
 discover_pdfs() {
     if [[ "$INTERACTIVE_MODE" == "true" ]]; then
-        mapfile -t pdfs_to_process < <(select_pdfs_interactive)
+        while IFS= read -r pdf; do
+            [[ -n "$pdf" ]] && pdfs_to_process+=("$pdf")
+        done < <(select_pdfs_interactive)
     else
         # Process all PDFs
         shopt -s nullglob

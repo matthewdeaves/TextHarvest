@@ -210,7 +210,9 @@ select_projects_interactive() {
 # Discover projects to process
 discover_projects() {
     if [[ "$INTERACTIVE_MODE" == "true" ]]; then
-        mapfile -t projects_to_process < <(select_projects_interactive)
+        while IFS= read -r project; do
+            [[ -n "$project" ]] && projects_to_process+=("$project")
+        done < <(select_projects_interactive)
     else
         # Process all projects
         shopt -s nullglob

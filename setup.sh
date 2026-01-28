@@ -222,8 +222,10 @@ update_packages() {
 install_packages() {
     local pm="$1"
     local dry_run="$2"
-    local -a packages
-    mapfile -t packages < <(get_packages "$pm")
+    local -a packages=()
+    while IFS= read -r pkg; do
+        [[ -n "$pkg" ]] && packages+=("$pkg")
+    done < <(get_packages "$pm")
     
     info "Installing packages: ${packages[*]}"
     
@@ -270,8 +272,10 @@ install_packages() {
 install_python_packages() {
     local pm="$1"
     local dry_run="$2"
-    local -a python_packages
-    mapfile -t python_packages < <(get_python_packages "$pm")
+    local -a python_packages=()
+    while IFS= read -r pkg; do
+        [[ -n "$pkg" ]] && python_packages+=("$pkg")
+    done < <(get_python_packages "$pm")
     
     if [[ ${#python_packages[@]} -eq 0 ]]; then
         info "No Python packages to install via pip"
@@ -429,8 +433,10 @@ list_packages() {
     get_packages "$pm" | sed 's/^/  - /'
     echo ""
     echo "Python packages:"
-    local python_packages
-    mapfile -t python_packages < <(get_python_packages "$pm")
+    local -a python_packages=()
+    while IFS= read -r pkg; do
+        [[ -n "$pkg" ]] && python_packages+=("$pkg")
+    done < <(get_python_packages "$pm")
     if [[ ${#python_packages[@]} -gt 0 ]]; then
         printf '  - %s\n' "${python_packages[@]}"
     else
