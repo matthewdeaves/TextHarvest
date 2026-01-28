@@ -29,7 +29,7 @@ usage() {
   echo "Example:"
   echo "  $0 -l eng+deu -i my_scans -t extracted_texts"
   echo "  $0 --skip-text -i documents" # Use skip-text mode
-  exit 1
+  exit 0
 }
 
 # --- Argument Parsing ---
