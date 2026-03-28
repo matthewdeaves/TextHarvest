@@ -28,7 +28,7 @@ jobs:
     name: Verify mapfile not used
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Check for mapfile usage
         run: |
@@ -75,7 +75,7 @@ jobs:
     name: Verify no associative arrays
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Check for associative array declarations
         run: |
@@ -101,7 +101,7 @@ jobs:
     name: Bash 3.2 syntax check (Docker)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Validate scripts with bash 3.2
         run: |
@@ -111,7 +111,7 @@ jobs:
           for script in textharvest.sh setup.sh process_*.sh lib/common.sh; do
             if [[ -f "$script" ]]; then
               echo "Checking: $script"
-              if docker run --rm -v "$PWD":/app bash:3.2 bash -n "/app/$script"; then
+              if docker run --rm -v "$PWD":/app bash:3.2@sha256:a80db208d9e8de3edd08ff4c464e7080eddd16bbb3ef8af04e14710372c00bca bash -n "/app/$script"; then
                 echo "  PASS: $script"
               else
                 echo "  FAIL: $script"
@@ -138,7 +138,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Check bash syntax
         run: |
@@ -220,7 +220,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Test library loading
         run: |
@@ -502,7 +502,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Test CLI help output
         run: |
@@ -644,7 +644,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Test setup help
         run: |
@@ -758,7 +758,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Test process_code.sh help
         run: |
@@ -833,7 +833,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Test full code processing workflow (dry-run)
         run: |
@@ -924,7 +924,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [setup-script-tests]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Run setup script
         run: |
@@ -1063,7 +1063,7 @@ jobs:
     runs-on: macos-latest
     needs: [setup-script-tests]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Run setup script
         run: |
@@ -1206,7 +1206,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [setup-execution-ubuntu]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Install dependencies
         run: sudo ./setup.sh
