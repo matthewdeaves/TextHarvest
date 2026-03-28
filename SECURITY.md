@@ -11,7 +11,8 @@
 If you discover a security vulnerability in this project, please report it responsibly:
 
 1. **Do NOT open a public GitHub issue.**
-2. Include steps to reproduce if possible.
+2. Go to [Security Advisories](https://github.com/matthewdeaves/TextHarvest/security/advisories) and click **"New draft security advisory"**.
+3. Include steps to reproduce if possible.
 
 ## Scope
 
