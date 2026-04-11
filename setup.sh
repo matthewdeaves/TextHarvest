@@ -122,6 +122,7 @@ get_packages() {
                 "poppler-utils"      # PDF utilities including pdftotext
                 "tesseract-ocr"      # OCR engine
                 "tesseract-ocr-eng"  # English language pack
+                "unpaper"            # Image preprocessing for OCR (--clean/--deskew)
                 "python3-pip"        # For installing ocrmypdf
                 "python3-venv"       # For creating virtual environments
             )
@@ -131,6 +132,7 @@ get_packages() {
                 "poppler-utils"      # PDF utilities
                 "tesseract"          # OCR engine
                 "tesseract-langpack-eng"  # English language pack
+                "unpaper"            # Image preprocessing for OCR (--clean/--deskew)
                 "python3-pip"        # For installing ocrmypdf
                 "python3-venv"       # For creating virtual environments
             )
@@ -140,6 +142,7 @@ get_packages() {
                 "poppler"            # PDF utilities
                 "tesseract"          # OCR engine with language packs
                 "tesseract-lang"     # Additional language packs
+                "unpaper"            # Image preprocessing for OCR (--clean/--deskew)
             )
             ;;
         *)

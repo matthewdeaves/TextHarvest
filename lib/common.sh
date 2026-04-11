@@ -142,14 +142,26 @@ create_output_dir() {
 check_disk_space() {
     local dir="$1"
     local min_space_mb="${2:-100}"
-    
+
+    # Skip disk space check in dry-run mode (directory may not exist yet)
+    if [[ "$DRY_RUN" == true ]]; then
+        debug "Skipping disk space check in dry-run mode"
+        return 0
+    fi
+
+    # Walk up to find an existing directory for df
+    local check_dir="$dir"
+    while [[ ! -d "$check_dir" ]] && [[ "$check_dir" != "/" ]]; do
+        check_dir="$(dirname "$check_dir")"
+    done
+
     local available_kb
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS version - df output format is different
-        available_kb=$(df -k "$dir" | awk 'NR==2 {print $4}')
+        available_kb=$(df -k "$check_dir" | awk 'NR==2 {print $4}')
     else
         # Linux version
-        available_kb=$(df "$dir" | awk 'NR==2 {print $4}')
+        available_kb=$(df "$check_dir" | awk 'NR==2 {print $4}')
     fi
     
     local available_mb=$((available_kb / 1024))
