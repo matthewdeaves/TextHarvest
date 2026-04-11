@@ -189,23 +189,23 @@ update_packages() {
             fi
             ;;
         yum)
-            if sudo yum check-update; then
+            # yum check-update returns 0 if no updates, 100 if updates available, other codes on error
+            local yum_rc=0
+            sudo yum check-update || yum_rc=$?
+            if (( yum_rc == 0 || yum_rc == 100 )); then
                 info "Package cache updated successfully"
             else
-                # yum check-update returns 100 if updates are available, not an error
-                if [[ $? -ne 100 ]]; then
-                    error_exit "Failed to update package cache"
-                fi
+                error_exit "Failed to update package cache (exit code: $yum_rc)"
             fi
             ;;
         dnf)
-            if sudo dnf check-update; then
+            # dnf check-update returns 0 if no updates, 100 if updates available, other codes on error
+            local dnf_rc=0
+            sudo dnf check-update || dnf_rc=$?
+            if (( dnf_rc == 0 || dnf_rc == 100 )); then
                 info "Package cache updated successfully"
             else
-                # dnf check-update returns 100 if updates are available
-                if [[ $? -ne 100 ]]; then
-                    error_exit "Failed to update package cache"
-                fi
+                error_exit "Failed to update package cache (exit code: $dnf_rc)"
             fi
             ;;
         brew)

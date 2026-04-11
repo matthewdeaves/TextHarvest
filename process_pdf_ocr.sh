@@ -7,8 +7,8 @@ TXT_DIR="ocr_text_output"
 OCR_LANG="eng"
 # Default OCR mode: force OCR on all pages. Use -s or --skip-text flag to change.
 OCR_MODE="force-ocr"
-# Other potential ocrmypdf args can be added here if needed, e.g. "--deskew --clean"
-OTHER_OCRMYPDF_ARGS=""
+# Default OCR preprocessing: deskew straightens rotated scans, clean removes noise
+OTHER_OCRMYPDF_ARGS="--deskew --clean"
 
 # --- Usage Function ---
 usage() {
@@ -45,10 +45,13 @@ while [[ "$#" -gt 0 ]]; do
   esac
 done
 
-# Combine OCR mode flag with other potential arguments
-OCRMYPDF_ARGS="--${OCR_MODE} ${OTHER_OCRMYPDF_ARGS}"
-# Trim leading/trailing whitespace that might result if OTHER_OCRMYPDF_ARGS is empty
-OCRMYPDF_ARGS=$(echo "$OCRMYPDF_ARGS" | awk '{$1=$1};1')
+# Build OCR arguments as an array for safe expansion
+OCRMYPDF_ARGS=("--${OCR_MODE}")
+if [[ -n "$OTHER_OCRMYPDF_ARGS" ]]; then
+    # Split additional args on whitespace into the array
+    read -r -a extra_args <<< "$OTHER_OCRMYPDF_ARGS"
+    OCRMYPDF_ARGS+=("${extra_args[@]}")
+fi
 
 
 # --- Script Initialization ---
@@ -75,15 +78,15 @@ if ! command -v pdftotext &> /dev/null; then
 fi
 
 # Create output directories if they don't exist
-mkdir -p "$OCR_DIR"
-mkdir -p "$TXT_DIR"
+mkdir -p "$OCR_DIR" || { echo "Error: Could not create directory '$OCR_DIR'"; exit 1; }
+mkdir -p "$TXT_DIR" || { echo "Error: Could not create directory '$TXT_DIR'"; exit 1; }
 
 echo "Input PDF directory:          '$PDF_DIR'"
 echo "Intermediate OCR PDF directory: '$OCR_DIR'"
 echo "Final Text Output directory:    '$TXT_DIR'"
 echo "OCR Language(s):              '$OCR_LANG'"
 echo "OCR Mode (ocrmypdf flag):     '--${OCR_MODE}'"
-echo "Additional ocrmypdf args:     '$OTHER_OCRMYPDF_ARGS'"
+echo "Additional ocrmypdf args:     '${OTHER_OCRMYPDF_ARGS}'"
 echo "---"
 
 # --- File Discovery and Selection Menu ---
@@ -105,7 +108,7 @@ while true; do # Main menu loop
   echo "2) Select specific PDF(s) to process"
   echo "Q) Quit"
   read -r -p "Enter your choice (1, 2, Q): " main_choice
-  main_choice=$(echo "$main_choice" | tr '[:upper:]' '[:lower:]') # Normalize to lowercase
+  main_choice="${main_choice,,}" # Normalize to lowercase
 
   case "$main_choice" in
     "1")
@@ -127,7 +130,7 @@ while true; do # Main menu loop
 
         echo ""
         read -r -p "Enter file numbers (comma-separated, e.g., 1,3,5), 'a' for all listed, or 'b' for back: " selection_input
-        selection_input_normalized=$(echo "$selection_input" | tr '[:upper:]' '[:lower:]')
+        selection_input_normalized="${selection_input,,}"
 
         if [[ "$selection_input_normalized" == "b" ]]; then
           break # Exit file selection loop, go back to main menu
@@ -188,7 +191,7 @@ while true; do # Main menu loop
         done
         
         read -r -p "Proceed with these ${#current_selection_this_attempt[@]} file(s)? (Y/n/r - reselect): " confirm_choice
-        confirm_choice_normalized=$(echo "$confirm_choice" | tr '[:upper:]' '[:lower:]')
+        confirm_choice_normalized="${confirm_choice,,}"
 
         if [[ "$confirm_choice_normalized" == "y" || -z "$confirm_choice_normalized" ]]; then # Default to Yes
           files_to_process=("${current_selection_this_attempt[@]}")
@@ -255,20 +258,15 @@ for pdf_file_path in "${files_to_process[@]}"; do
   txt_file="$TXT_DIR/${base_name}.txt"
 
   # --- Step 1: Run OCRmyPDF ---
-  echo "  Running OCRmyPDF with flags: -l \"$OCR_LANG\" $OCRMYPDF_ARGS"
+  echo "  Running OCRmyPDF with flags: -l \"$OCR_LANG\" ${OCRMYPDF_ARGS[*]}"
   ocr_output="" # Clear for each file
-  
+
   # Capture all output (stdout+stderr) to ocr_output AND display it to tty for live feedback
-  ocr_output=$(ocrmypdf -l "$OCR_LANG" $OCRMYPDF_ARGS "$pdf_file_path" "$ocr_pdf_file" 2>&1 | tee /dev/tty)
+  ocr_output=$(ocrmypdf -l "$OCR_LANG" "${OCRMYPDF_ARGS[@]}" "$pdf_file_path" "$ocr_pdf_file" 2>&1 | tee /dev/tty)
   ocr_exit_code=${PIPESTATUS[0]} # Get exit code of ocrmypdf (left side of pipe), not tee
 
   if [ $ocr_exit_code -ne 0 ]; then
     echo "  Error: OCRmyPDF failed for '$pdf_file_path' with exit code $ocr_exit_code. Check output above."
-    # The output should have already been displayed by tee, but if it was extensive, printing it here again might be too much.
-    # A small portion or just a note that it failed is often enough if tee showed the details.
-    # If ocr_output is very long, this could flood the terminal:
-    # echo "  OCRmyPDF Full Output Log (if captured): "
-    # echo "$ocr_output" | sed 's/^/    /' # Indent output for clarity
     failed_ocr_count=$((failed_ocr_count + 1))
     echo "---------------------"
     continue

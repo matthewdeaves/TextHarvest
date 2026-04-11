@@ -134,9 +134,9 @@ config_show() {
     
     for config_file in "${config_files[@]}"; do
         if [[ -f "$config_file" ]]; then
-            echo "  ✓ $config_file"
+            echo "  [OK] $config_file"
         else
-            echo "  ✗ $config_file (not found)"
+            echo "  [--] $config_file (not found)"
         fi
     done
     

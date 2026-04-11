@@ -54,16 +54,12 @@ EOF
 
 # Parse arguments
 parse_args() {
-    local remaining_args
-    remaining_args=$(parse_common_args "$@")
-    
-    if [[ $? -eq 1 ]]; then
+    if ! parse_common_args "$@"; then
         show_help
         exit 0
     fi
-    
-    eval set -- "$remaining_args"
-    
+    set -- "${REMAINING_ARGS[@]}"
+
     while [[ $# -gt 0 ]]; do
         case $1 in
             -i|--input)
@@ -120,87 +116,21 @@ init_script() {
     info "Output directory: '$TXT_DIR'" 2
 }
 
-# Interactive PDF selection
-select_pdfs_interactive() {
+# Discover PDFs to process
+discover_pdfs() {
     local -a all_pdfs=()
-    local -a selected_pdfs=()
-    
+
     # Find all PDF files
     shopt -s nullglob
     all_pdfs=("$PDF_DIR"/*.pdf)
     shopt -u nullglob
-    
-    if (( ${#all_pdfs[@]} == 0 )); then
-        error_exit "No PDF files found in '$PDF_DIR'"
-    fi
-    
-    while true; do
-        echo "" >&2
-        echo "Available PDFs in '$PDF_DIR':" >&2
-        for i in "${!all_pdfs[@]}"; do
-            printf "  %2d) %s\n" "$((i + 1))" "$(basename "${all_pdfs[$i]}")" >&2
-        done
 
-        echo "" >&2
-        echo "Options:" >&2
-        echo "  a) Process ALL PDFs" >&2
-        echo "  1,2,3) Select specific PDFs (comma-separated)" >&2
-        echo "  q) Quit" >&2
-
-        read -r -p "Enter your choice: " choice
-        
-        case "$choice" in
-            [Qq]*)
-                info "Exiting at user request"
-                exit 0
-                ;;
-            [Aa]*)
-                selected_pdfs=("${all_pdfs[@]}")
-                break
-                ;;
-            *)
-                # Parse comma-separated numbers
-                IFS=',' read -r -a indices <<< "$choice"
-                selected_pdfs=()
-                local valid=true
-                
-                for idx_str in "${indices[@]}"; do
-                    idx_str=$(echo "$idx_str" | xargs) # Trim whitespace
-                    if [[ "$idx_str" =~ ^[1-9][0-9]*$ ]]; then
-                        local idx=$((idx_str - 1))
-                        if (( idx >= 0 && idx < ${#all_pdfs[@]} )); then
-                            selected_pdfs+=("${all_pdfs[$idx]}")
-                        else
-                            warn "Invalid PDF number: $idx_str"
-                            valid=false
-                        fi
-                    else
-                        warn "Invalid input: $idx_str"
-                        valid=false
-                    fi
-                done
-                
-                if [[ "$valid" == true ]] && (( ${#selected_pdfs[@]} > 0 )); then
-                    break
-                fi
-                ;;
-        esac
-    done
-    
-    printf '%s\n' "${selected_pdfs[@]}"
-}
-
-# Discover PDFs to process
-discover_pdfs() {
     if [[ "$INTERACTIVE_MODE" == "true" ]]; then
         while IFS= read -r pdf; do
             [[ -n "$pdf" ]] && pdfs_to_process+=("$pdf")
-        done < <(select_pdfs_interactive)
+        done < <(select_items_interactive "PDF" "${all_pdfs[@]}")
     else
-        # Process all PDFs
-        shopt -s nullglob
-        pdfs_to_process=("$PDF_DIR"/*.pdf)
-        shopt -u nullglob
+        pdfs_to_process=("${all_pdfs[@]}")
     fi
     
     if (( ${#pdfs_to_process[@]} == 0 )); then
@@ -254,16 +184,11 @@ main_processing() {
     
     if [[ "$ENABLE_PARALLEL" == "true" ]]; then
         info "Processing ${#pdfs_to_process[@]} PDFs in parallel" 2
-        
-        local -a commands=()
-        for pdf in "${pdfs_to_process[@]}"; do
-            commands+=("process_pdf_parallel \"$pdf\"")
-        done
-        
-        parallel_execute "${commands[@]}"
-        
-        # Count results (simplified for parallel execution)
-        processed=${#pdfs_to_process[@]}
+
+        parallel_execute process_pdf_parallel "${pdfs_to_process[@]}"
+
+        processed=${PARALLEL_SUCCESSES:-0}
+        failed=${PARALLEL_FAILURES:-0}
     else
         init_progress "${#pdfs_to_process[@]}" "Extracting text from PDFs"
         

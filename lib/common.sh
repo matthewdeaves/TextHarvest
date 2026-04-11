@@ -8,7 +8,7 @@
 # Licensed under the MIT License - see LICENSE file for details
 
 # Global variables
-TEXTHARVEST_VERSION="2.0.0"
+readonly TEXTHARVEST_VERSION="2.0.0"
 VERBOSE_LEVEL=1  # 0=quiet, 1=normal, 2=verbose, 3=debug
 DRY_RUN=false
 
@@ -203,7 +203,21 @@ get_file_size() {
             fi
         else
             # Linux version
-            stat -c%s "$file" | numfmt --to=iec
+            local size_bytes
+            size_bytes=$(stat -c%s "$file" 2>/dev/null || echo "0")
+            if command -v numfmt &> /dev/null; then
+                echo "$size_bytes" | numfmt --to=iec
+            else
+                if (( size_bytes >= 1073741824 )); then
+                    echo "$((size_bytes / 1073741824))G"
+                elif (( size_bytes >= 1048576 )); then
+                    echo "$((size_bytes / 1048576))M"
+                elif (( size_bytes >= 1024 )); then
+                    echo "$((size_bytes / 1024))K"
+                else
+                    echo "${size_bytes}B"
+                fi
+            fi
         fi
     else
         echo "0"
@@ -234,7 +248,7 @@ update_progress() {
     
     export PROGRESS_CURRENT="$current"
     
-    if (( VERBOSE_LEVEL >= 2 )); then
+    if (( VERBOSE_LEVEL >= 2 && PROGRESS_TOTAL > 0 )); then
         local percentage=$((current * 100 / PROGRESS_TOTAL))
         local elapsed=$(($(date +%s) - PROGRESS_START_TIME))
         local eta=""
@@ -272,7 +286,6 @@ load_config() {
     local config_file="$1"
     
     if [[ -f "$config_file" ]]; then
-        # Source the config file in a subshell to avoid polluting current environment
         debug "Loading configuration from '$config_file'"
         source "$config_file"
         info "Configuration loaded from '$config_file'" 2
@@ -332,38 +345,130 @@ list_plugins() {
 # PARALLEL PROCESSING FUNCTIONS
 # =============================================================================
 
-# Execute function in parallel
+# Execute a function in parallel over a list of items
+# Usage: parallel_execute <function_name> item1 item2 ...
+# The function is called once per item: function_name "item"
 parallel_execute() {
-    local -a commands=("$@")
+    local func="$1"
+    shift
+    local -a items=("$@")
     local max_jobs="${TEXTHARVEST_MAX_JOBS:-4}"
     local -a pids=()
-    
-    info "Running ${#commands[@]} commands with max $max_jobs parallel jobs" 2
-    
-    for cmd in "${commands[@]}"; do
+    local -a exit_codes=()
+
+    info "Running ${#items[@]} jobs with max $max_jobs parallel workers" 2
+
+    for item in "${items[@]}"; do
         # Wait if we've reached max jobs
         while (( ${#pids[@]} >= max_jobs )); do
             for i in "${!pids[@]}"; do
                 if ! kill -0 "${pids[i]}" 2>/dev/null; then
+                    wait "${pids[i]}" 2>/dev/null
+                    exit_codes+=($?)
                     unset "pids[i]"
                 fi
             done
             pids=("${pids[@]}")  # Re-index array
             sleep 0.1
         done
-        
-        # Start new job
-        eval "$cmd" &
+
+        # Start new job — call function directly, no eval
+        "$func" "$item" &
         pids+=($!)
-        debug "Started job: $cmd (PID: $!)"
+        debug "Started job: $func \"$item\" (PID: $!)"
     done
-    
-    # Wait for all remaining jobs
+
+    # Wait for all remaining jobs and collect exit codes
     for pid in "${pids[@]}"; do
-        wait "$pid"
+        wait "$pid" 2>/dev/null
+        exit_codes+=($?)
     done
-    
-    info "All parallel jobs completed" 2
+
+    # Count failures
+    local failures=0
+    for code in "${exit_codes[@]}"; do
+        if (( code != 0 )); then
+            ((failures++))
+        fi
+    done
+
+    PARALLEL_FAILURES=$failures
+    PARALLEL_SUCCESSES=$(( ${#items[@]} - failures ))
+
+    info "All parallel jobs completed ($PARALLEL_SUCCESSES succeeded, $failures failed)" 2
+}
+
+# =============================================================================
+# INTERACTIVE SELECTION FUNCTIONS
+# =============================================================================
+
+# Generic interactive item selection from a list
+# Usage: select_items_interactive "item_type" item1 item2 ...
+# Prints selected items to stdout, one per line
+select_items_interactive() {
+    local item_type="$1"
+    shift
+    local -a all_items=("$@")
+    local -a selected_items=()
+
+    if (( ${#all_items[@]} == 0 )); then
+        error_exit "No ${item_type}s found"
+    fi
+
+    while true; do
+        echo ""
+        info "Available ${item_type}s:"
+        for i in "${!all_items[@]}"; do
+            printf "  %2d) %s\n" "$((i + 1))" "$(basename "${all_items[$i]}")"
+        done
+
+        echo ""
+        echo "Options:"
+        echo "  a) Process ALL ${item_type}s"
+        echo "  1,2,3) Select specific ${item_type}s (comma-separated)"
+        echo "  q) Quit"
+
+        read -r -p "Enter your choice: " choice
+
+        case "$choice" in
+            [Qq]*)
+                info "Exiting at user request"
+                exit 0
+                ;;
+            [Aa]*)
+                selected_items=("${all_items[@]}")
+                break
+                ;;
+            *)
+                # Parse comma-separated numbers
+                IFS=',' read -r -a indices <<< "$choice"
+                selected_items=()
+                local valid=true
+
+                for idx_str in "${indices[@]}"; do
+                    idx_str="${idx_str// /}"  # Trim whitespace
+                    if [[ "$idx_str" =~ ^[1-9][0-9]*$ ]]; then
+                        local idx=$((idx_str - 1))
+                        if (( idx >= 0 && idx < ${#all_items[@]} )); then
+                            selected_items+=("${all_items[$idx]}")
+                        else
+                            warn "Invalid number: $idx_str"
+                            valid=false
+                        fi
+                    else
+                        warn "Invalid input: $idx_str"
+                        valid=false
+                    fi
+                done
+
+                if [[ "$valid" == true ]] && (( ${#selected_items[@]} > 0 )); then
+                    break
+                fi
+                ;;
+        esac
+    done
+
+    printf '%s\n' "${selected_items[@]}"
 }
 
 # =============================================================================
@@ -393,7 +498,10 @@ setup_signal_handlers() {
 }
 
 # Parse common command line arguments
+# Sets global REMAINING_ARGS array with leftover arguments
+# Returns 1 if --help was requested (caller should show help)
 parse_common_args() {
+    REMAINING_ARGS=()
     while [[ $# -gt 0 ]]; do
         case $1 in
             -v|--verbose)
@@ -420,14 +528,11 @@ parse_common_args() {
                 return 1  # Signal that help should be shown
                 ;;
             *)
-                # Return remaining args
-                break
+                REMAINING_ARGS+=("$1")
+                shift
                 ;;
         esac
     done
-    
-    # Return remaining arguments
-    echo "$@"
 }
 
 # Initialize common library

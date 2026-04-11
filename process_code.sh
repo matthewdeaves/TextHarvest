@@ -53,16 +53,12 @@ EOF
 
 # Parse arguments
 parse_args() {
-    local remaining_args
-    remaining_args=$(parse_common_args "$@")
-    
-    if [[ $? -eq 1 ]]; then
+    if ! parse_common_args "$@"; then
         show_help
         exit 0
     fi
-    
-    eval set -- "$remaining_args"
-    
+    set -- "${REMAINING_ARGS[@]}"
+
     while [[ $# -gt 0 ]]; do
         case $1 in
             -i|--input)
@@ -133,11 +129,10 @@ init_script() {
     info "Specific files: ${SPECIFIC_FILENAMES[*]}" 2
 }
 
-# Interactive project selection
-select_projects_interactive() {
+# Discover projects to process
+discover_projects() {
     local -a all_projects=()
-    local -a selected_projects=()
-    
+
     # Find all project directories
     shopt -s nullglob
     for dir in "$CODE_DIR"/*; do
@@ -146,82 +141,13 @@ select_projects_interactive() {
         fi
     done
     shopt -u nullglob
-    
-    if (( ${#all_projects[@]} == 0 )); then
-        error_exit "No project directories found in '$CODE_DIR'"
-    fi
-    
-    while true; do
-        echo "" >&2
-        echo "Available projects in '$CODE_DIR':" >&2
-        for i in "${!all_projects[@]}"; do
-            printf "  %2d) %s\n" "$((i + 1))" "${all_projects[$i]}" >&2
-        done
 
-        echo "" >&2
-        echo "Options:" >&2
-        echo "  a) Process ALL projects" >&2
-        echo "  1,2,3) Select specific projects (comma-separated)" >&2
-        echo "  q) Quit" >&2
-
-        read -r -p "Enter your choice: " choice
-        
-        case "$choice" in
-            [Qq]*)
-                info "Exiting at user request"
-                exit 0
-                ;;
-            [Aa]*)
-                selected_projects=("${all_projects[@]}")
-                break
-                ;;
-            *)
-                # Parse comma-separated numbers
-                IFS=',' read -r -a indices <<< "$choice"
-                selected_projects=()
-                local valid=true
-                
-                for idx_str in "${indices[@]}"; do
-                    idx_str=$(echo "$idx_str" | xargs) # Trim whitespace
-                    if [[ "$idx_str" =~ ^[1-9][0-9]*$ ]]; then
-                        local idx=$((idx_str - 1))
-                        if (( idx >= 0 && idx < ${#all_projects[@]} )); then
-                            selected_projects+=("${all_projects[$idx]}")
-                        else
-                            warn "Invalid project number: $idx_str"
-                            valid=false
-                        fi
-                    else
-                        warn "Invalid input: $idx_str"
-                        valid=false
-                    fi
-                done
-                
-                if [[ "$valid" == true ]] && (( ${#selected_projects[@]} > 0 )); then
-                    break
-                fi
-                ;;
-        esac
-    done
-    
-    echo "${selected_projects[@]}"
-}
-
-# Discover projects to process
-discover_projects() {
     if [[ "$INTERACTIVE_MODE" == "true" ]]; then
         while IFS= read -r project; do
             [[ -n "$project" ]] && projects_to_process+=("$project")
-        done < <(select_projects_interactive)
+        done < <(select_items_interactive "project" "${all_projects[@]}")
     else
-        # Process all projects
-        shopt -s nullglob
-        for dir in "$CODE_DIR"/*; do
-            if [[ -d "$dir" ]]; then
-                projects_to_process+=("$(basename "$dir")")
-            fi
-        done
-        shopt -u nullglob
+        projects_to_process=("${all_projects[@]}")
     fi
     
     if (( ${#projects_to_process[@]} == 0 )); then
